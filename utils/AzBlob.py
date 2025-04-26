@@ -24,3 +24,8 @@ class AzBlob:
             expiry=datetime.utcnow() + timedelta(hours=1)
         )
         return sas_token
+    
+
+    def delete_blob(self, report_id: int):
+            blob_name = f"poke_report_{report_id}.csv"
+            self.container_client.delete_blob(blob_name)

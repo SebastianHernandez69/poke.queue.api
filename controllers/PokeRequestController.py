@@ -37,8 +37,8 @@ async def update_poke_request(poke_request: PokeRequest) -> dict:
     
 async def insert_poke_request(poke_request: PokeRequest) -> dict:
     try:
-        query = "EXEC pokequeue.sp_create_poke_request ? "
-        params = (poke_request.pokemon_type,) 
+        query = "EXEC pokequeue.sp_create_poke_request ?, ? "
+        params = (poke_request.pokemon_type, poke_request.sample_size,) 
         result = await execute_query_json( query, params, True )
         result_dict = json.loads(result)
         
@@ -70,3 +70,30 @@ async def get_all_request() -> dict:
         id = record['ReportId']
         record['url'] = f"{record['url']}?{blob.generate_sas(id)}"
     return result_dict
+
+
+async def delete_pokemon_report(report_id: int):
+    try:
+        query_check = "SELECT * FROM pokequeue.requests WHERE id = ?"
+        params = (report_id,)
+        exists = await execute_query_json(query_check, params)
+        if not json.loads(exists):
+            raise HTTPException(status_code=404, detail="Reporte no encontrado")
+
+        blob = AzBlob()
+        try:
+            blob.delete_blob(report_id)
+        except Exception as e:
+            logger.warning(f"No se pudo eliminar el blob del reporte {report_id}: {e}")
+
+        query_delete = "DELETE FROM pokequeue.requests WHERE id = ?"
+        
+        await execute_query_json(query_delete, params, True)
+
+        return {"message": f"Reporte {report_id} eliminado correctamente"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error al eliminar el reporte {report_id}: {e}")
+        raise HTTPException(status_code=500, detail="Error interno al eliminar el reporte")

@@ -26,3 +26,9 @@ class PokeRequest(BaseModel):
         description="The status of the requested",
         pattern="^(sent|completed|inprogress|failed)$"
     )
+
+    sample_size: Optional[int]   = Field(
+        default=None,
+        gt=0,
+        description="Número máximo de registros a incluir en el reporte"
+    )
